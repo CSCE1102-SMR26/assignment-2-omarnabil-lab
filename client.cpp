@@ -19,27 +19,37 @@ client::~client()
 
 QCoro::Task<void> client::sendNetworkMessage(QString host, quint16 port, QString message)
 {
-    // TODO: Create a QTcpSocket locally. (It will be destroyed automatically when this function ends).
+    QTcpSocket socket;
 
-    // TODO: Print a qDebug() message stating you are attempting to connect to the host and port.
+    // 2. Print a qDebug() message stating you are attempting to connect.
+    qDebug() << "Attempting to connect to" << host << "on port" << port;
 
-    // TODO: Initiate the connection to the host using the socket.
+    // 3. Initiate the connection to the host using the socket.
+    socket.connectToHost(host, port);
 
-    // TODO: Asynchronously wait for the connection to establish using co_await and qCoro.
-    // Save the result into a boolean variable (e.g., 'connected').
+    // 4. Asynchronously wait for the connection to establish using co_await and qCoro.
+    bool connected = co_await qCoro(socket).waitForConnected();
 
-    // TODO: Write an if-statement. If NOT connected:
-    // 1. Show a QMessageBox::critical stating the connection failed, using socket.errorString().
-    // 2. co_return; to exit early.
+    // 5. Write an if-statement. If NOT connected:
+    if (!connected) {
+        // Show a QMessageBox::critical stating the connection failed
+        QMessageBox::critical(this, "Connection Error", "Connection failed: " + socket.errorString());
+        co_return; // Exit the coroutine early
+    }
 
-    // TODO: Print a qDebug() message confirming connection.
+    // 6. Print a qDebug() message confirming connection.
+    qDebug() << "Successfully connected to server!";
 
-    // TODO: Write the 'message' variable to the socket (remember to convert it to Utf8).
+    // 7. Write the 'message' variable to the socket (converted to Utf8).
+    socket.write(message.toUtf8());
 
-    // TODO: Tell Qt to gracefully disconnect from the host.
+    // 8. Tell Qt to gracefully disconnect from the host.
+    socket.disconnectFromHost();
 
-    // TODO: Asynchronously wait for Qt to finish flushing the buffer and disconnecting using co_await and qCoro.
+    // 9. Asynchronously wait for Qt to finish flushing the buffer and disconnecting.
+    co_await qCoro(socket).waitForDisconnected();
 
-    // TODO: Show a QMessageBox::information stating the message was sent successfully.
+    // 10. Show a QMessageBox::information stating the message was sent successfully.
+    QMessageBox::information(this, "Success", "Message sent successfully!");
 
 }
